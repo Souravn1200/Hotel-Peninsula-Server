@@ -29,6 +29,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const roomsCollection = client.db('peninsula').collection('rooms')
+    const mybookingCollection = client.db('peninsula').collection('mybooking')
 
     app.get('/rooms', async(req, res) => {
         const cursor =  roomsCollection.find();
@@ -41,8 +42,26 @@ async function run() {
       
       const query = { _id: new ObjectId(id) };
       const result = await roomsCollection.findOne(query);
-        console.log(result);
+        // console.log(result);
         res.send(result);
+    });
+
+
+    app.post('/mybooking', async(req, res) => {
+      const newBook = req.body;
+      console.log(newBook);
+      const result =  await mybookingCollection.insertOne(newBook);
+      res.send(result)
+    })
+
+
+    app.get('/mybooking/:email', async (req, res) => {
+      const email = req.params.email;
+      console.log(email);
+      const query = { email: email };
+      const result = await mybookingCollection.find(query).toArray();
+      console.log(result);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
