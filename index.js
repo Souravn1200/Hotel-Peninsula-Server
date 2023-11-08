@@ -30,6 +30,25 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token
+  if (!token) {
+    return res.status(401).send({ message: "Invalid user" })
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "Invalid user err" })
+    }
+    req.user = decoded;
+    next()
+  })
+
+}
+
+
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -52,9 +71,14 @@ async function run() {
         .send({ success: true });
     });
     
+    app.post('/logout', async (req, res) => {
+      const user = req.body
+      console.log(user);
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+    })
 
 
-
+    // Fetching all rooms
 
     app.get('/rooms', async(req, res) => {
         const cursor =  roomsCollection.find();
@@ -62,6 +86,8 @@ async function run() {
         res.send(result)
     })
 
+
+    // Fetching single details by id from room collection
      app.get('/rooms/:id', async (req, res) => {
       const id = req.params.id;
       
@@ -72,7 +98,7 @@ async function run() {
     });
 
 
-// trying to update
+// trying to update availability
     
     app.patch('/rooms/:id', async (req, res) => {
       const id = req.params.id;
@@ -96,7 +122,7 @@ async function run() {
     });
 
 
-
+// Posting data that user selects
     app.post('/mybooking', async(req, res) => {
       const newBook = req.body;
       console.log(newBook);
@@ -105,11 +131,19 @@ async function run() {
     })
 
 
-    app.get('/mybooking/:email', async (req, res) => {
-      const email = req.params.email;
+// Finding booking by email
+    app.get('/mybooking', verifyToken, async (req, res) => {
+
       console.log('tokka kaote', req.cookies.token)
-      console.log(email);
-      const query = { email: email };
+
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: "forbidden" })
+      }
+     
+      let query = {};
+      if(req?.query?.email){
+        query = {email : req.query.email}
+      }
       const result = await mybookingCollection.find(query).toArray();
       console.log(result);
       res.send(result);
@@ -143,7 +177,29 @@ app.get('/lowtohigh', async(req, res) => {
   res.send(result)
 })
 
+app.get("/update/:id",async(req,res) => {
+  const id= req.params.id
+  const query ={_id : new ObjectId(id)};
+  const result = await mybookingCollection.findOne(query)
+  res.send(result);
 
+});
+
+
+app.put("/update/:id",async(req,res) => {
+  const id = req.params.id
+  const filter = {_id: new ObjectId(id)}
+  const options = { upsert: true };
+  const data = req.body
+  console.log(data);
+  const updateDoc = {
+    $set:{
+      date : data.newDate
+    }
+  }
+  const result = await mybookingCollection.updateOne(filter,updateDoc,options)
+  res.send(result);
+});
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
