@@ -56,10 +56,12 @@ async function run() {
     const roomsCollection = client.db('peninsula').collection('rooms')
     const mybookingCollection = client.db('peninsula').collection('mybooking')
 
-    // Jwt api
+    // Jwt api token
 
     app.post('/jwt', async (req, res) => {
+
       const user = req.body;
+
       console.log(user);
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
       res
@@ -74,7 +76,7 @@ async function run() {
     app.post('/logout', async (req, res) => {
       const user = req.body
       console.log(user);
-      
+
       res.clearCookie("token", { maxAge: 0 }).send({ success: true });
     })
 
