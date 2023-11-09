@@ -85,6 +85,7 @@ async function run() {
     app.get('/rooms', async(req, res) => {
         const cursor =  roomsCollection.find();
         const result = await cursor.toArray();
+        
         res.send(result)
     })
 
